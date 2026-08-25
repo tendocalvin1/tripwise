@@ -28,9 +28,12 @@ to explore:
 
 ### Frontend
 
-- Next.js
+- React.js
 - TypeScript
 - Tailwind CSS
+- Vite
+- React Router
+- TanStack Query
 
 ### Backend
 
