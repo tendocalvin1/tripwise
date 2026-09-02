@@ -4,9 +4,9 @@ services:
     container_name: tripwise-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: tripwise
-      POSTGRES_USER: tripwise
-      POSTGRES_PASSWORD: tripwise_dev_password
+      PGDATABASE: railway
+      PGUSER: postgres
+      POSTGRES_PASSWORD: oaQRaGOTSKBgRBpFFJEIXFxPOEsyMVQI
     ports:
       - "5433:5432"
     volumes:
@@ -14,3 +14,5 @@ services:
 
 volumes:
   postgres_data:
+
+
