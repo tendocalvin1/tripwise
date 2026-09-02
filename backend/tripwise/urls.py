@@ -19,5 +19,5 @@ from django.urls import path
 # This page is for end points for the project
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls)
 ]
