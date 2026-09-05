@@ -38,3 +38,21 @@ class Destination(models.Model):
 
     def __str__(self):
         return f"{self.name}, {self.country}"
+    
+    
+class SavedDestination(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    user = models.ForeignKey("users.User",on_delete=models.CASCADE,related_name="saved_destinations")
+    destination = models.ForeignKey(Destination,on_delete=models.CASCADE,related_name="saved_by_users")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "destination"],
+                name="unique_user_saved_destination",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} saved {self.destination.name}"
