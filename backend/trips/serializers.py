@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Trip, ItineraryItem, BudgetItem
 
-
+# these are the serializers for the trip
 class TripSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trip
