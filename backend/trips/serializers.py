@@ -39,6 +39,7 @@ class ItineraryItemSerializer(serializers.ModelSerializer):
         model = ItineraryItem
         fields = [
             "id",
+            "trip",
             "date",
             "title",
             "description",
@@ -47,7 +48,7 @@ class ItineraryItemSerializer(serializers.ModelSerializer):
             "order",
             "created_at",
             "updated_at",
-        ]
+]
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def validate(self, attrs):
@@ -81,6 +82,7 @@ class BudgetItemSerializer(serializers.ModelSerializer):
         model = BudgetItem
         fields = [
             "id",
+            "trip"
             "category",
             "estimated_amount",
             "actual_amount",
