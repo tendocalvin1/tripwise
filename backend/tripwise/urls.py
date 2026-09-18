@@ -27,4 +27,7 @@ urlpatterns = [
 
     # Application APIs
     path("api/", include("trips.urls")),
+    path("api/", include("destinations.urls"))
+    
+    
 ]

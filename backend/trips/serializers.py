@@ -80,13 +80,14 @@ class ItineraryItemSerializer(serializers.ModelSerializer):
 class BudgetItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = BudgetItem
-        fields = [
-            "id",
-            "trip"
-            "category",
-            "estimated_amount",
-            "actual_amount",
-            "created_at",
-            "updated_at",
-        ]
+        fields = '__all__'
+        # fields = [
+        #     "id",
+        #     "trip"
+        #     "category",
+        #     "estimated_amount",
+        #     "actual_amount",
+        #     "created_at",
+        #     "updated_at",
+        # ]
         read_only_fields = ["id", "created_at", "updated_at"]
