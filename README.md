@@ -1,74 +1,81 @@
 # Tripwise
 
-Tripwise is an AI-powered collaborative travel planning platform that helps
-travelers discover destinations, plan trips, build itineraries, manage
-budgets, monitor weather, collaborate with other travelers, and receive
-personalized travel recommendations.
+Tripwise is a travel planning platform for discovering destinations, creating
+trips, building itineraries, managing budgets, and eventually receiving
+personalized AI-powered travel recommendations.
 
-## Project Goals
+Tripwise is being built as a production-oriented full-stack engineering
+project, with a focus on backend architecture, API design, data modeling,
+authentication, asynchronous processing, caching, testing, and deployment.
 
-Tripwise is being built as a production-oriented software engineering project
-to explore:
+## Project Status
 
-- REST API design
-- Database modeling
-- Search, filtering, ordering, and pagination
-- External API integration
-- Authentication and authorization
+Tripwise is currently in active development.
+
+### Completed
+
+- User authentication with JWT
+- Protected API endpoints
+- User-specific data access
+- Destination management
+- Saved destinations
+- Trip creation and retrieval
+- Trip ownership and authorization
+- Trip date validation
+- Itinerary API
+- Budget API
+- Budget validation and database constraints
+- PostgreSQL database
+- React frontend with Vite
+- React Router navigation
+- React ↔ Django API integration
+- Login flow
+- JWT access/refresh token handling
+- Trip dashboard
+- Destination selector when creating trips
+- Trip details page
+- End-to-end trip creation flow
+
+### Currently Building
+
+- Trip itinerary UI
+- Add/edit/delete itinerary activities
+- Budget management UI
+- Destination discovery UI
+- Weather integration
+- Maps integration
+
+### Planned
+
 - Redis caching
 - Celery background processing
-- Collaborative workflows
-- Docker and Linux
-- CI/CD with GitHub Actions
+- Asynchronous weather/data processing
+- Collaborative trip planning
 - AI-powered traveller recommendations
-- Automated testing
-- Production engineering practices
+- Automated backend and frontend testing
+- Production deployment
+- Logging and monitoring
+- Health checks
+- CI/CD improvements
+- Production documentation
 
-## Technology Stack
+---
 
-### Frontend
+## Core Features
 
-- React.js
-- TypeScript
-- Tailwind CSS
-- Vite
-- React Router
-- TanStack Query
+### Authentication
 
-### Backend
+Tripwise uses JWT-based authentication.
 
-- Python
-- Django
-- Django REST Framework
+Current authentication flow:
 
-### Database
-
-- PostgreSQL
-
-### Infrastructure
-
-- Docker
-- Redis
-- Celery
-- GitHub Actions
-
-### AI
-
-- LLM-based traveller recommendation system
-
-## Development Timeline
-
-### Week 1
-Foundation & Destination Discovery
-
-### Week 2
-External Data & Reliability
-
-### Week 3
-Trip Planning & Budgets
-
-### Week 4
-Maps, Collaboration & Asynchronous Processing
-
-### Week 5
-AI & Production Readiness
+```text
+React
+  ↓
+POST /api/auth/login/
+  ↓
+Django REST Framework
+  ↓
+JWT access + refresh tokens
+  ↓
+Authenticated API requests
