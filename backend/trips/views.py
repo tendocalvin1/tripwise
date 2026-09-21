@@ -18,9 +18,16 @@ class ItineraryItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return ItineraryItem.objects.filter(
+        queryset = ItineraryItem.objects.filter(
             trip__user=self.request.user
         )
+
+        trip_id = self.request.query_params.get("trip")
+
+        if trip_id:
+            queryset = queryset.filter(trip_id=trip_id)
+
+        return queryset
 
     def perform_create(self, serializer):
         trip = serializer.validated_data["trip"]
