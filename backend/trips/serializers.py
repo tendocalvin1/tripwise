@@ -48,25 +48,52 @@ class ItineraryItemSerializer(serializers.ModelSerializer):
             "order",
             "created_at",
             "updated_at",
-]
+        ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def validate(self, attrs):
         if self.instance:
-            start_time = attrs.get("start_time", self.instance.start_time)
-            end_time = attrs.get("end_time", self.instance.end_time)
+            trip = attrs.get("trip", self.instance.trip)
+            date = attrs.get("date", self.instance.date)
+
+            start_time = attrs.get(
+                "start_time",
+                self.instance.start_time
+            )
+
+            end_time = attrs.get(
+                "end_time",
+                self.instance.end_time
+            )
         else:
+            trip = attrs.get("trip")
+            date = attrs.get("date")
             start_time = attrs.get("start_time")
             end_time = attrs.get("end_time")
 
+        if trip and date:
+            if date < trip.start_date or date > trip.end_date:
+                raise serializers.ValidationError({
+                    "date": (
+                        f"Activity date must be between "
+                        f"{trip.start_date} and {trip.end_date}."
+                    )
+                })
+
         if start_time is None and end_time is not None:
             raise serializers.ValidationError({
-                "start_time": "Start time is required when end time is provided."
+                "start_time": (
+                    "Start time is required when "
+                    "end time is provided."
+                )
             })
 
         if start_time is not None and end_time is None:
             raise serializers.ValidationError({
-                "end_time": "End time is required when start time is provided."
+                "end_time": (
+                    "End time is required when "
+                    "start time is provided."
+                )
             })
 
         if start_time and end_time and end_time < start_time:
