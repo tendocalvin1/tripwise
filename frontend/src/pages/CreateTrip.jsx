@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createTrip, getDestinations } from "../services/api";
+import "./CreateTrip.css";
 
 function CreateTrip() {
     const navigate = useNavigate();
@@ -28,16 +29,8 @@ function CreateTrip() {
 
             try {
                 const data = await getDestinations(accessToken);
-
-                console.log("DESTINATIONS RESPONSE:", data);
-
-                const destinationList = data.results || data;
-
-                console.log("DESTINATION LIST:", destinationList);
-
-                setDestinations(destinationList);
+                setDestinations(data.results || data);
             } catch (error) {
-                console.error("DESTINATIONS ERROR:", error);
                 setError(error.message);
             } finally {
                 setLoadingDestinations(false);
@@ -51,6 +44,12 @@ function CreateTrip() {
         event.preventDefault();
 
         setError("");
+
+        if (endDate < startDate) {
+            setError("End date cannot be earlier than start date.");
+            return;
+        }
+
         setLoading(true);
 
         const accessToken = localStorage.getItem("accessToken");
@@ -78,98 +77,130 @@ function CreateTrip() {
     }
 
     return (
-        <div>
-            <h1>Create Trip</h1>
+        <main className="create-trip-page">
+            <header className="create-trip-header">
+                <h1>Create a trip</h1>
+                <p>
+                    Add the basics now. You can organize activities and
+                    track your budget after creating your trip.
+                </p>
+            </header>
 
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Trip Name</label>
-
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(event) => setName(event.target.value)}
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label>Destination</label>
-
-                    {loadingDestinations ? (
-                        <p>Loading destinations...</p>
-                    ) : destinations.length === 0 ? (
-                        <p>No destinations available.</p>
-                    ) : (
-                        <select
-                            value={destination}
-                            onChange={(event) =>
-                                setDestination(event.target.value)
-                            }
+            <section className="create-trip-card">
+                <form className="create-trip-form" onSubmit={handleSubmit}>
+                    <div className="create-trip-field">
+                        <label htmlFor="trip-name">Trip name</label>
+                        <input
+                            id="trip-name"
+                            type="text"
+                            value={name}
+                            onChange={(event) => setName(event.target.value)}
+                            placeholder="e.g. Summer in Nairobi"
                             required
-                        >
-                            <option value="">
-                                Select a destination
-                            </option>
+                        />
+                    </div>
 
-                            {destinations.map((item) => (
-                                <option key={item.id} value={item.id}>
-                                    {item.name}, {item.country}
-                                </option>
-                            ))}
-                        </select>
+                    <div className="create-trip-field">
+                        <label htmlFor="trip-destination">Destination</label>
+
+                        {loadingDestinations ? (
+                            <p className="create-trip-status" role="status">
+                                Loading destinations...
+                            </p>
+                        ) : destinations.length === 0 ? (
+                            <p className="create-trip-hint">
+                                No destinations available. Try again later.
+                            </p>
+                        ) : (
+                            <select
+                                id="trip-destination"
+                                value={destination}
+                                onChange={(event) =>
+                                    setDestination(event.target.value)
+                                }
+                                required
+                            >
+                                <option value="">Select a destination</option>
+
+                                {destinations.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.name}, {item.country}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+
+                    <div className="create-trip-date-grid">
+                        <div className="create-trip-field">
+                            <label htmlFor="trip-start-date">Start date</label>
+                            <input
+                                id="trip-start-date"
+                                type="date"
+                                value={startDate}
+                                onChange={(event) =>
+                                    setStartDate(event.target.value)
+                                }
+                                max={endDate || undefined}
+                                required
+                            />
+                        </div>
+
+                        <div className="create-trip-field">
+                            <label htmlFor="trip-end-date">End date</label>
+                            <input
+                                id="trip-end-date"
+                                type="date"
+                                value={endDate}
+                                onChange={(event) =>
+                                    setEndDate(event.target.value)
+                                }
+                                min={startDate || undefined}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="create-trip-field">
+                        <label htmlFor="trip-notes">Notes</label>
+                        <textarea
+                            id="trip-notes"
+                            value={notes}
+                            onChange={(event) => setNotes(event.target.value)}
+                            placeholder="Anything you want to remember about this trip..."
+                        />
+                        <span className="create-trip-hint">
+                            Optional
+                        </span>
+                    </div>
+
+                    {error && (
+                        <p className="create-trip-error" role="alert">
+                            {error}
+                        </p>
                     )}
-                </div>
 
-                <div>
-                    <label>Start Date</label>
+                    <div className="create-trip-actions">
+                        <button
+                            className="create-trip-submit"
+                            type="submit"
+                            disabled={loading || loadingDestinations}
+                        >
+                            {loading ? "Creating..." : "Create Trip"}
+                        </button>
 
-                    <input
-                        type="date"
-                        value={startDate}
-                        onChange={(event) =>
-                            setStartDate(event.target.value)
-                        }
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label>End Date</label>
-
-                    <input
-                        type="date"
-                        value={endDate}
-                        onChange={(event) =>
-                            setEndDate(event.target.value)
-                        }
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label>Notes</label>
-
-                    <textarea
-                        value={notes}
-                        onChange={(event) => setNotes(event.target.value)}
-                    />
-                </div>
-
-                {error && <p>{error}</p>}
-
-                <button
-                    type="submit"
-                    disabled={loading || loadingDestinations}
-                >
-                    {loading ? "Creating..." : "Create Trip"}
-                </button>
-            </form>
-
-            <button onClick={() => navigate("/dashboard")}>
-                Cancel
-            </button>
-        </div>
+                        <button
+                            className="create-trip-cancel"
+                            type="button"
+                            onClick={() => navigate("/dashboard")}
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </main>
     );
 }
 

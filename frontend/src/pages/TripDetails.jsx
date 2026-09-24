@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
+import "./TripDetails.css";
 import {
     getTrip,
     getItineraryItems,
@@ -60,6 +60,25 @@ function TripDetails() {
     // =========================
     // Load trip
     // =========================
+
+    const totalEstimated = budgetItems.reduce(
+    (total, item) => total + Number(item.estimated_amount || 0),
+    0
+);
+
+const totalActual = budgetItems.reduce(
+    (total, item) => total + Number(item.actual_amount || 0),
+    0
+);
+
+const budgetDifference = totalEstimated - totalActual;
+
+function formatAmount(amount) {
+    return amount.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+}
 
     useEffect(() => {
         async function loadTrip() {
@@ -484,79 +503,92 @@ function TripDetails() {
     // =========================
 
     return (
-        <div>
-            <button
-                onClick={() => navigate("/dashboard")}
-            >
-                ← Back to Dashboard
-            </button>
+    <main className="trip-details">
+        <button
+            className="trip-back-button"
+            type="button"
+            onClick={() => navigate("/dashboard")}
+        >
+            ← Back to Dashboard
+        </button>
 
+        <header className="trip-header">
             <h1>{trip.name}</h1>
 
-            <p>
+            <p className="trip-date-range">
                 {trip.start_date} → {trip.end_date}
             </p>
 
-            <p>Status: {trip.status}</p>
+            <span className="trip-status">
+                {trip.status}
+            </span>
 
             {trip.notes && (
-                <div>
+                <div className="trip-notes">
                     <h2>Notes</h2>
                     <p>{trip.notes}</p>
                 </div>
             )}
+        </header>
 
-            <hr />
+        <section className="trip-section">
+            <div className="trip-section-heading">
+                <h2>Itinerary</h2>
 
-            {/* =========================
-                ITINERARY
-            ========================= */}
-
-            <h2>Itinerary</h2>
+                <button
+                    className="trip-primary-button"
+                    type="button"
+                    onClick={() => {
+                        if (showActivityForm) {
+                            handleCancelActivityForm();
+                        } else {
+                            setShowActivityForm(true);
+                            setActivityError("");
+                        }
+                    }}
+                >
+                    {showActivityForm ? "Cancel" : "+ Add Activity"}
+                </button>
+            </div>
 
             {itineraryItems.length === 0 ? (
-                <p>No itinerary items yet.</p>
+                <div className="trip-empty-state">
+                    No itinerary items yet. Add an activity to start planning.
+                </div>
             ) : (
-                <div>
+                <div className="trip-activity-list">
                     {itineraryItems.map((item) => (
-                        <article key={item.id}>
+                        <article
+                            className="trip-activity-card"
+                            key={item.id}
+                        >
                             <h3>{item.title}</h3>
 
-                            <p>
-                                Date: {item.date}
+                            <p className="trip-activity-meta">
+                                {item.date}
+                                {item.start_time && ` · ${item.start_time}`}
+                                {item.end_time && ` – ${item.end_time}`}
                             </p>
 
-                            {item.start_time &&
-                                item.end_time && (
-                                    <p>
-                                        {item.start_time} →{" "}
-                                        {item.end_time}
-                                    </p>
-                                )}
-
                             {item.description && (
-                                <p>
+                                <p className="trip-activity-description">
                                     {item.description}
                                 </p>
                             )}
 
-                            <div>
+                            <div className="trip-card-actions">
                                 <button
+                                    className="secondary-button"
                                     type="button"
-                                    onClick={() =>
-                                        handleEditActivity(item)
-                                    }
+                                    onClick={() => handleEditActivity(item)}
                                 >
                                     Edit
                                 </button>
 
                                 <button
+                                    className="danger-button"
                                     type="button"
-                                    onClick={() =>
-                                        handleDeleteActivity(
-                                            item.id
-                                        )
-                                    }
+                                    onClick={() => handleDeleteActivity(item.id)}
                                 >
                                     Delete
                                 </button>
@@ -566,189 +598,193 @@ function TripDetails() {
                 </div>
             )}
 
-            <button
-                type="button"
-                onClick={() => {
-                    if (showActivityForm) {
-                        handleCancelActivityForm();
-                    } else {
-                        setShowActivityForm(true);
-                        setActivityError("");
-                    }
-                }}
-            >
-                {showActivityForm
-                    ? "Cancel"
-                    : "Add Activity"}
-            </button>
-
             {showActivityForm && (
                 <form
+                    className="trip-form"
                     onSubmit={
                         editingActivityId
                             ? handleUpdateActivity
                             : handleAddActivity
                     }
                 >
-                    <div>
-                        <label>
-                            Activity Title
-                        </label>
-
+                    <div className="trip-form-field">
+                        <label htmlFor="activity-title">Activity title</label>
                         <input
+                            id="activity-title"
                             type="text"
                             value={activityTitle}
                             onChange={(event) =>
-                                setActivityTitle(
-                                    event.target.value
-                                )
+                                setActivityTitle(event.target.value)
                             }
                             required
                         />
                     </div>
 
-                    <div>
-                        <label>Date</label>
-
+                    <div className="trip-form-field">
+                        <label htmlFor="activity-date">Date</label>
                         <input
+                            id="activity-date"
                             type="date"
                             value={activityDate}
                             onChange={(event) =>
-                                setActivityDate(
-                                    event.target.value
-                                )
+                                setActivityDate(event.target.value)
                             }
                             required
                         />
                     </div>
 
-                    <div>
-                        <label>
-                            Description
-                        </label>
-
+                    <div className="trip-form-field">
+                        <label htmlFor="activity-description">Description</label>
                         <textarea
+                            id="activity-description"
                             value={activityDescription}
                             onChange={(event) =>
-                                setActivityDescription(
-                                    event.target.value
-                                )
+                                setActivityDescription(event.target.value)
                             }
                         />
                     </div>
 
-                    <div>
-                        <label>
-                            Start Time
-                        </label>
-
+                    <div className="trip-form-field">
+                        <label htmlFor="activity-start">Start time</label>
                         <input
+                            id="activity-start"
                             type="time"
                             value={activityStartTime}
                             onChange={(event) =>
-                                setActivityStartTime(
-                                    event.target.value
-                                )
+                                setActivityStartTime(event.target.value)
                             }
                         />
                     </div>
 
-                    <div>
-                        <label>
-                            End Time
-                        </label>
-
+                    <div className="trip-form-field">
+                        <label htmlFor="activity-end">End time</label>
                         <input
+                            id="activity-end"
                             type="time"
                             value={activityEndTime}
                             onChange={(event) =>
-                                setActivityEndTime(
-                                    event.target.value
-                                )
+                                setActivityEndTime(event.target.value)
                             }
                         />
                     </div>
 
-                    <div>
-                        <label>Order</label>
-
+                    <div className="trip-form-field">
+                        <label htmlFor="activity-order">Order</label>
                         <input
+                            id="activity-order"
                             type="number"
                             min="1"
                             value={activityOrder}
                             onChange={(event) =>
-                                setActivityOrder(
-                                    event.target.value
-                                )
+                                setActivityOrder(event.target.value)
                             }
                             required
                         />
                     </div>
 
                     {activityError && (
-                        <p>{activityError}</p>
+                        <p className="trip-form-error" role="alert">
+                            {activityError}
+                        </p>
                     )}
 
-                    <button
-                        type="submit"
-                        disabled={activityLoading}
-                    >
-                        {activityLoading
-                            ? editingActivityId
-                                ? "Updating..."
-                                : "Adding..."
-                            : editingActivityId
-                                ? "Update Activity"
-                                : "Save Activity"}
-                    </button>
+                    <div className="trip-card-actions">
+                        <button
+                            type="submit"
+                            disabled={activityLoading}
+                        >
+                            {activityLoading
+                                ? editingActivityId
+                                    ? "Updating..."
+                                    : "Adding..."
+                                : editingActivityId
+                                    ? "Update Activity"
+                                    : "Save Activity"}
+                        </button>
+
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={handleCancelActivityForm}
+                            disabled={activityLoading}
+                        >
+                            Cancel
+                        </button>
+                    </div>
                 </form>
             )}
+        </section>
 
-            <hr />
+        <section className="trip-section">
+            <div className="trip-section-heading">
+                <h2>Budget</h2>
 
-            {/* =========================
-                BUDGET
-            ========================= */}
+                <button
+                    className="trip-primary-button"
+                    type="button"
+                    onClick={() => {
+                        if (showBudgetForm) {
+                            handleCancelBudgetForm();
+                        } else {
+                            setShowBudgetForm(true);
+                            setBudgetError("");
+                        }
+                    }}
+                >
+                    {showBudgetForm ? "Cancel" : "+ Add Budget Item"}
+                </button>
+            </div>
 
-            <h2>Budget</h2>
+            <div className="budget-overview">
+    <div className="budget-overview-card">
+        <span>Estimated</span>
+        <strong>{formatAmount(totalEstimated)}</strong>
+    </div>
+
+    <div className="budget-overview-card">
+        <span>Actual spent</span>
+        <strong>{formatAmount(totalActual)}</strong>
+    </div>
+
+    <div className="budget-overview-card">
+        <span>
+            {budgetDifference >= 0 ? "Remaining" : "Over estimate"}
+        </span>
+        <strong className={budgetDifference < 0 ? "over-budget" : ""}>
+            {formatAmount(Math.abs(budgetDifference))}
+        </strong>
+    </div>
+</div>
 
             {budgetItems.length === 0 ? (
-                <p>No budget items yet.</p>
+                <div className="trip-empty-state">
+                    No budget items yet. Add an item to track your trip costs.
+                </div>
             ) : (
-                <div>
+                <div className="trip-budget-list">
                     {budgetItems.map((item) => (
-                        <article key={item.id}>
-                            <h3>
-                                {item.category}
-                            </h3>
+                        <article className="trip-budget-card" key={item.id}>
+                            <h3>{item.category}</h3>
 
-                            <p>
-                                Estimated:{" "}
-                                {item.estimated_amount}
+                            <p className="trip-activity-meta">
+                                Estimated: {item.estimated_amount}
+                                {" · "}
+                                Actual: {item.actual_amount}
                             </p>
 
-                            <p>
-                                Actual:{" "}
-                                {item.actual_amount}
-                            </p>
-
-                            <div>
+                            <div className="trip-card-actions">
                                 <button
+                                    className="secondary-button"
                                     type="button"
-                                    onClick={() =>
-                                        handleEditBudget(item)
-                                    }
+                                    onClick={() => handleEditBudget(item)}
                                 >
                                     Edit
                                 </button>
 
                                 <button
+                                    className="danger-button"
                                     type="button"
-                                    onClick={() =>
-                                        handleDeleteBudget(
-                                            item.id
-                                        )
-                                    }
+                                    onClick={() => handleDeleteBudget(item.id)}
                                 >
                                     Delete
                                 </button>
@@ -758,135 +794,98 @@ function TripDetails() {
                 </div>
             )}
 
-            <button
-                type="button"
-                onClick={() => {
-                    if (showBudgetForm) {
-                        handleCancelBudgetForm();
-                    } else {
-                        setShowBudgetForm(true);
-                        setBudgetError("");
-                    }
-                }}
-            >
-                {showBudgetForm
-                    ? "Cancel"
-                    : "Add Budget Item"}
-            </button>
-
             {showBudgetForm && (
                 <form
+                    className="trip-form"
                     onSubmit={
                         editingBudgetId
                             ? handleUpdateBudget
                             : handleAddBudget
                     }
                 >
-                    <div>
-                        <label>
-                            Category
-                        </label>
-
+                    <div className="trip-form-field">
+                        <label htmlFor="budget-category">Category</label>
                         <select
+                            id="budget-category"
                             value={budgetCategory}
                             onChange={(event) =>
-                                setBudgetCategory(
-                                    event.target.value
-                                )
+                                setBudgetCategory(event.target.value)
                             }
                             required
                         >
-                            <option value="">
-                                Select category
-                            </option>
-
-                            <option value="ACCOMMODATION">
-                                Accommodation
-                            </option>
-
-                            <option value="TRANSPORTATION">
-                                Transportation
-                            </option>
-
-                            <option value="FOOD">
-                                Food
-                            </option>
-
-                            <option value="ACTIVITIES">
-                                Activities
-                            </option>
-
-                            <option value="SHOPPING">
-                                Shopping
-                            </option>
-
-                            <option value="OTHER">
-                                Other
-                            </option>
+                            <option value="">Select category</option>
+                            <option value="ACCOMMODATION">Accommodation</option>
+                            <option value="TRANSPORTATION">Transportation</option>
+                            <option value="FOOD">Food</option>
+                            <option value="ACTIVITIES">Activities</option>
+                            <option value="SHOPPING">Shopping</option>
+                            <option value="OTHER">Other</option>
                         </select>
                     </div>
 
-                    <div>
-                        <label>
-                            Estimated Amount
-                        </label>
-
+                    <div className="trip-form-field">
+                        <label htmlFor="budget-estimated">Estimated amount</label>
                         <input
+                            id="budget-estimated"
                             type="number"
                             min="0"
                             step="0.01"
-                            value={
-                                budgetEstimatedAmount
-                            }
+                            value={budgetEstimatedAmount}
                             onChange={(event) =>
-                                setBudgetEstimatedAmount(
-                                    event.target.value
-                                )
+                                setBudgetEstimatedAmount(event.target.value)
                             }
                             required
                         />
                     </div>
 
-                    <div>
-                        <label>
-                            Actual Amount
-                        </label>
-
+                    <div className="trip-form-field">
+                        <label htmlFor="budget-actual">Actual amount</label>
                         <input
+                            id="budget-actual"
                             type="number"
                             min="0"
                             step="0.01"
-                            value={
-                                budgetActualAmount
-                            }
+                            value={budgetActualAmount}
                             onChange={(event) =>
-                                setBudgetActualAmount(
-                                    event.target.value
-                                )
+                                setBudgetActualAmount(event.target.value)
                             }
                         />
                     </div>
 
                     {budgetError && (
-                        <p>{budgetError}</p>
+                        <p className="trip-form-error" role="alert">
+                            {budgetError}
+                        </p>
                     )}
 
-                    <button
-                        type="submit"
-                        disabled={budgetLoading}
-                    >
-                        {budgetLoading
-                            ? editingBudgetId
-                                ? "Updating..."
-                                : "Adding..."
-                            : editingBudgetId
-                                ? "Update Budget Item"
-                                : "Save Budget Item"}
-                    </button>
+                    <div className="trip-card-actions">
+                        <button
+                            type="submit"
+                            disabled={budgetLoading}
+                        >
+                            {budgetLoading
+                                ? editingBudgetId
+                                    ? "Updating..."
+                                    : "Adding..."
+                                : editingBudgetId
+                                    ? "Update Budget Item"
+                                    : "Save Budget Item"}
+                        </button>
+
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={handleCancelBudgetForm}
+                            disabled={budgetLoading}
+                        >
+                            Cancel
+                        </button>
+                    </div>
                 </form>
             )}
-        </div>
-    );
+        </section>
+    </main>
+);
 }
 
 export default TripDetails;

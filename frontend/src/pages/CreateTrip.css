@@ -1,0 +1,159 @@
+.create-trip-page {
+  width: min(100% - 32px, 760px);
+  margin: 0 auto;
+  padding: 28px 0 56px;
+  color: var(--text-main);
+}
+
+.create-trip-header {
+  margin-bottom: 22px;
+}
+
+.create-trip-header h1 {
+  margin: 0 0 8px;
+  color: var(--text-main);
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+
+.create-trip-header p {
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.create-trip-card {
+  padding: 26px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.create-trip-form {
+  display: grid;
+  gap: 18px;
+}
+
+.create-trip-field {
+  display: grid;
+  gap: 7px;
+}
+
+.create-trip-field label {
+  color: var(--text-main);
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.create-trip-field input,
+.create-trip-field select,
+.create-trip-field textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2937;
+  font: inherit;
+}
+
+.create-trip-field textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.create-trip-field input:focus,
+.create-trip-field select:focus,
+.create-trip-field textarea:focus {
+  outline: 3px solid #c5dccb;
+  border-color: var(--primary);
+}
+
+.create-trip-date-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.create-trip-hint {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.create-trip-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.92rem;
+}
+
+.create-trip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.create-trip-submit,
+.create-trip-cancel {
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 650;
+}
+
+.create-trip-submit {
+  background: var(--primary);
+  color: #fff;
+}
+
+.create-trip-submit:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.create-trip-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.create-trip-cancel {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text-main);
+}
+
+.create-trip-cancel:hover {
+  background: #f0eee6;
+}
+
+.create-trip-status {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .create-trip-page {
+    width: min(100% - 24px, 760px);
+    padding-top: 20px;
+  }
+
+  .create-trip-card {
+    padding: 18px;
+  }
+
+  .create-trip-date-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .create-trip-actions {
+    flex-direction: column;
+  }
+
+  .create-trip-submit,
+  .create-trip-cancel {
+    width: 100%;
+  }
+}
