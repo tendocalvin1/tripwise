@@ -83,6 +83,13 @@ function Dashboard() {
                     >
                         + Create Trip
                     </button>
+
+                    <button
+                    type="button"
+                    onClick={() => navigate("/destinations")}
+                >
+                    Explore destinations
+                </button>
                 </div>
 
                 {trips.length === 0 ? (
