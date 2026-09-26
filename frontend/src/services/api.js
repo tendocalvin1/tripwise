@@ -86,6 +86,69 @@ export async function getDestinations(accessToken) {
     return data;
 }
 
+export async function getSavedDestinations(accessToken) {
+    const response = await fetch(`${API_BASE_URL}/saved-destinations/`, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.detail || "Failed to fetch saved destinations.");
+    }
+
+    return data;
+}
+
+export async function saveDestination(accessToken, destinationId) {
+    const response = await fetch(`${API_BASE_URL}/saved-destinations/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ destination: destinationId }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        const firstError = Object.values(data)[0];
+        throw new Error(
+            Array.isArray(firstError)
+                ? firstError[0]
+                : data.detail || "Failed to save destination."
+        );
+    }
+
+    return data;
+}
+
+export async function unsaveDestination(accessToken, savedDestinationId) {
+    const response = await fetch(
+        `${API_BASE_URL}/saved-destinations/${savedDestinationId}/`,
+        {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        let data = {};
+        try {
+            data = await response.json();
+        } catch {
+            // DELETE can return an empty response body.
+        }
+
+        throw new Error(data.detail || "Failed to remove saved destination.");
+    }
+}
+
 
 export async function getTrip(accessToken, tripId) {
     const response = await fetch(
