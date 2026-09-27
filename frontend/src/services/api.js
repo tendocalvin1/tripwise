@@ -446,3 +446,27 @@ export async function deleteBudgetItem(
         );
     }
 }
+
+export async function getDestinationWeather(accessToken, destinationId) {
+    const response = await fetch(
+        `${API_BASE_URL}/destinations/${destinationId}/weather/`,
+        {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            data.detail ||
+            "Could not load weather for this destination."
+        );
+    }
+
+    return data;
+}
+
+

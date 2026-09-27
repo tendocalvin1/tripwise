@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
     getDestinations,
     getSavedDestinations,
+    getDestinationWeather,
     saveDestination,
     unsaveDestination,
 } from "../services/api";
@@ -17,6 +18,41 @@ function getList(data) {
     return [];
 }
 
+function getWeatherLabel(code) {
+    const labels = {
+        0: "Clear sky",
+        1: "Mainly clear",
+        2: "Partly cloudy",
+        3: "Overcast",
+        45: "Fog",
+        48: "Depositing rime fog",
+        51: "Light drizzle",
+        53: "Moderate drizzle",
+        55: "Dense drizzle",
+        56: "Light freezing drizzle",
+        57: "Dense freezing drizzle",
+        61: "Slight rain",
+        63: "Moderate rain",
+        65: "Heavy rain",
+        66: "Light freezing rain",
+        67: "Heavy freezing rain",
+        71: "Slight snow",
+        73: "Moderate snow",
+        75: "Heavy snow",
+        77: "Snow grains",
+        80: "Slight rain showers",
+        81: "Moderate rain showers",
+        82: "Violent rain showers",
+        85: "Slight snow showers",
+        86: "Heavy snow showers",
+        95: "Thunderstorm",
+        96: "Thunderstorm with slight hail",
+        99: "Thunderstorm with heavy hail",
+    };
+
+    return labels[code] || "Conditions unavailable";
+}
+
 function Destinations() {
     const navigate = useNavigate();
 
@@ -28,6 +64,11 @@ function Destinations() {
     const [pageError, setPageError] = useState("");
     const [savingId, setSavingId] = useState(null);
     const [actionError, setActionError] = useState("");
+
+    const [weatherById, setWeatherById] = useState({});
+    const [weatherLoadingId, setWeatherLoadingId] = useState(null);
+    const [weatherErrors, setWeatherErrors] = useState({});
+    const [openWeatherId, setOpenWeatherId] = useState(null);
 
     const token = localStorage.getItem("accessToken");
 
@@ -134,6 +175,52 @@ function Destinations() {
         }
     }
 
+    async function handleWeatherToggle(destination) {
+        const destinationId = String(destination.id);
+
+        // Close the panel if it is already open and has loaded data.
+        if (
+            openWeatherId === destinationId &&
+            weatherById[destinationId]
+        ) {
+            setOpenWeatherId(null);
+            return;
+        }
+
+        setOpenWeatherId(destinationId);
+        setWeatherErrors((current) => ({
+            ...current,
+            [destinationId]: "",
+        }));
+
+        // Use the cached weather data if this destination was loaded before.
+        if (weatherById[destinationId]) {
+            return;
+        }
+
+        setWeatherLoadingId(destinationId);
+
+        try {
+            const weatherData = await getDestinationWeather(
+                token,
+                destination.id
+            );
+
+            setWeatherById((current) => ({
+                ...current,
+                [destinationId]: weatherData,
+            }));
+        } catch (error) {
+            setWeatherErrors((current) => ({
+                ...current,
+                [destinationId]:
+                    error.message || "Could not load weather for this destination.",
+            }));
+        } finally {
+            setWeatherLoadingId(null);
+        }
+    }
+
     function formatType(type) {
         if (!type) return "Destination";
 
@@ -234,12 +321,25 @@ function Destinations() {
                     )}
                 </div>
             ) : (
-                <section className="destinations-grid" aria-label="Destinations">
+                <section
+                    className="destinations-grid"
+                    aria-label="Destinations"
+                >
                     {filteredDestinations.map((destination) => {
                         const destinationId = String(destination.id);
                         const isSaved =
                             savedByDestinationId.has(destinationId);
                         const isSaving = savingId === destinationId;
+                        const isWeatherLoading =
+                            weatherLoadingId === destinationId;
+                        const weather = weatherById[destinationId];
+                        const isWeatherOpen =
+                            openWeatherId === destinationId;
+
+                        const hasCoordinates =
+                            destination.latitude != null &&
+                            destination.longitude != null;
+
                         const location = [
                             destination.city,
                             destination.country,
@@ -291,6 +391,118 @@ function Destinations() {
                                         </p>
                                     )}
 
+                                    <section className="destination-weather">
+                                        <button
+                                            className="destination-weather-button"
+                                            type="button"
+                                            disabled={
+                                                isWeatherLoading ||
+                                                !hasCoordinates
+                                            }
+                                            onClick={() =>
+                                                handleWeatherToggle(destination)
+                                            }
+                                            aria-expanded={isWeatherOpen}
+                                        >
+                                            {isWeatherLoading
+                                                ? "Loading weather…"
+                                                : isWeatherOpen && weather
+                                                  ? "Hide weather"
+                                                  : "View weather"}
+                                        </button>
+
+                                        {!hasCoordinates && (
+                                            <p className="destination-weather-note">
+                                                Weather unavailable: coordinates
+                                                have not been added.
+                                            </p>
+                                        )}
+
+                                        {weatherErrors[destinationId] && (
+                                            <p
+                                                className="destination-weather-error"
+                                                role="alert"
+                                            >
+                                                {weatherErrors[destinationId]}
+                                            </p>
+                                        )}
+
+                                        {isWeatherOpen && weather && (
+                                            <div className="destination-weather-panel">
+                                                <h3>Current weather</h3>
+
+                                                <p className="destination-weather-temperature">
+                                                    {weather.current?.temperature_2m ??
+                                                        "—"}
+                                                    °C
+                                                </p>
+
+                                                <p className="destination-weather-detail">
+                                                    {getWeatherLabel(
+                                                        weather.current?.weather_code
+                                                    )}
+                                                    {" · "}Feels like{" "}
+                                                    {weather.current?.apparent_temperature ??
+                                                        "—"}
+                                                    °C
+                                                </p>
+
+                                                <p className="destination-weather-detail">
+                                                    Wind:{" "}
+                                                    {weather.current?.wind_speed_10m ??
+                                                        "—"}{" "}
+                                                    km/h
+                                                </p>
+
+                                                <h3 className="destination-weather-forecast-title">
+                                                    7-day forecast
+                                                </h3>
+
+                                                <div className="destination-weather-forecast">
+                                                    {weather.forecast?.map(
+                                                        (day) => (
+                                                            <div
+                                                                className="destination-weather-day"
+                                                                key={day.date}
+                                                            >
+                                                                <span>
+                                                                    {new Date(
+                                                                        `${day.date}T00:00:00`
+                                                                    ).toLocaleDateString(
+                                                                        undefined,
+                                                                        {
+                                                                            weekday:
+                                                                                "short",
+                                                                            month: "short",
+                                                                            day: "numeric",
+                                                                        }
+                                                                    )}
+                                                                </span>
+
+                                                                <strong>
+                                                                    {day.temperature_max ??
+                                                                        "—"}
+                                                                    ° /{" "}
+                                                                    {day.temperature_min ??
+                                                                        "—"}
+                                                                    °
+                                                                </strong>
+
+                                                                <small>
+                                                                    Rain:{" "}
+                                                                    {day.precipitation_probability ==
+                                                                    null
+                                                                        ? "—"
+                                                                        : `${day.precipitation_probability}%`}
+                                                                </small>
+                                                            </div>
+                                                        )
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </section>
+
                                     <button
                                         className={
                                             isSaved
@@ -306,8 +518,8 @@ function Destinations() {
                                         {isSaving
                                             ? "Updating…"
                                             : isSaved
-                                                ? "Saved · Remove"
-                                                : "Save destination"}
+                                              ? "Saved · Remove"
+                                              : "Save destination"}
                                     </button>
                                 </div>
                             </article>
