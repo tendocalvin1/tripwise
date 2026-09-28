@@ -2,6 +2,7 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from .models import Trip, ItineraryItem, BudgetItem
 from .serializers import TripSerializer, ItineraryItemSerializer, BudgetItemSerializer
+from rest_framework.exceptions import PermissionDenied
 # Create your views here.
 class TripViewSet(viewsets.ModelViewSet):
     serializer_class = TripSerializer
@@ -41,6 +42,16 @@ class ItineraryItemViewSet(viewsets.ModelViewSet):
 
         serializer.save()
         
+    def perform_update(self, serializer):
+        trip = serializer.validated_data.get("trip", serializer.instance.trip)
+
+        if trip.user != self.request.user:
+            raise PermissionDenied(
+            "You do not have permission to add an item to this trip."
+        )
+
+        serializer.save()
+        
         
 class BudgetItemViewSet(viewsets.ModelViewSet):
     serializer_class = BudgetItemSerializer
@@ -62,3 +73,14 @@ class BudgetItemViewSet(viewsets.ModelViewSet):
             )
 
         serializer.save()
+    
+    
+    def perform_update(self, serializer):
+            trip = serializer.validated_data.get("trip", serializer.instance.trip)
+    
+            if trip.user != self.request.user:
+                raise PermissionDenied(
+                "You do not have permission to add an item to this trip."
+            )
+    
+            serializer.save()

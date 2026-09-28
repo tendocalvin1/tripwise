@@ -34,3 +34,18 @@ class SavedDestinationSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "user", "created_at"]
 
+    def validate_destination(self, destination):
+        request = self.context.get("request")
+
+        if request and request.user.is_authenticated:
+            already_saved = SavedDestination.objects.filter(
+                user=request.user,
+                destination=destination,
+            ).exists()
+
+            if already_saved:
+                raise serializers.ValidationError(
+                    "You have already saved this destination."
+                )
+
+        return destination
