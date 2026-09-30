@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { loginUser } from "../services/api";
 import "./Login.css";
 
 function Login() {
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -18,14 +19,14 @@ function Login() {
         setLoading(true);
 
         try {
-            const data = await loginUser(email, password);
+            const data = await loginUser(email.trim(), password);
 
             localStorage.setItem("accessToken", data.access);
             localStorage.setItem("refreshToken", data.refresh);
 
             navigate("/dashboard");
         } catch (error) {
-            setError(error.message);
+            setError(error.message || "Unable to sign in. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -46,10 +47,12 @@ function Login() {
                         <div className="art-sun" />
                         <div className="art-hill art-hill-back" />
                         <div className="art-hill art-hill-front" />
+
                         <div className="art-route">
                             <span className="route-dot route-dot-start" />
                             <span className="route-dot route-dot-end" />
                         </div>
+
                         <div className="art-card">
                             <span className="art-card-icon">✦</span>
                             <span>
@@ -60,33 +63,56 @@ function Login() {
                     </div>
 
                     <div className="login-visual-copy">
-                        <p className="visual-eyebrow">MAKE ROOM FOR THE JOURNEY</p>
+                        <p className="visual-eyebrow">
+                            MAKE ROOM FOR THE JOURNEY
+                        </p>
+
                         <h2>Plan less. Explore more.</h2>
+
                         <p>
                             Bring your trips, plans, and travel budget together
                             in one place.
                         </p>
                     </div>
 
-                    <span className="visual-footer">Your journey, thoughtfully planned.</span>
+                    <span className="visual-footer">
+                        Your journey, thoughtfully planned.
+                    </span>
                 </aside>
 
                 <div className="login-content">
                     <div className="login-form-wrap">
                         <div className="login-heading">
                             <p className="login-eyebrow">WELCOME BACK</p>
+
                             <h1>Sign in to Tripwise</h1>
-                            <p>Enter your details to continue planning your journey.</p>
+
+                            <p>
+                                Enter your details to continue planning your
+                                journey.
+                            </p>
                         </div>
+
+                        {location.state?.registered && (
+                            <p className="login-success" role="status">
+                                Account created successfully. You can now sign
+                                in.
+                            </p>
+                        )}
 
                         <form className="login-form" onSubmit={handleSubmit}>
                             <div className="login-field">
-                                <label htmlFor="login-email">Email address</label>
+                                <label htmlFor="login-email">
+                                    Email address
+                                </label>
+
                                 <input
                                     id="login-email"
                                     type="email"
                                     value={email}
-                                    onChange={(event) => setEmail(event.target.value)}
+                                    onChange={(event) =>
+                                        setEmail(event.target.value)
+                                    }
                                     placeholder="you@example.com"
                                     autoComplete="email"
                                     required
@@ -94,12 +120,17 @@ function Login() {
                             </div>
 
                             <div className="login-field">
-                                <label htmlFor="login-password">Password</label>
+                                <label htmlFor="login-password">
+                                    Password
+                                </label>
+
                                 <input
                                     id="login-password"
                                     type="password"
                                     value={password}
-                                    onChange={(event) => setPassword(event.target.value)}
+                                    onChange={(event) =>
+                                        setPassword(event.target.value)
+                                    }
                                     placeholder="Enter your password"
                                     autoComplete="current-password"
                                     required
@@ -118,12 +149,16 @@ function Login() {
                                 disabled={loading}
                             >
                                 {loading ? "Signing in..." : "Sign in"}
-                                {!loading && <span aria-hidden="true">→</span>}
+
+                                {!loading && (
+                                    <span aria-hidden="true">→</span>
+                                )}
                             </button>
                         </form>
 
                         <p className="login-note">
-                            Your next trip is waiting to be planned.
+                            Don't have an account?{" "}
+                            <Link to="/register">Create one</Link>
                         </p>
                     </div>
 

@@ -25,6 +25,33 @@ export async function loginUser(email, password) {
 }
 
 
+export async function registerUser(userData) {
+    const response = await fetch(`${API_BASE_URL}/auth/register/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        const firstError = Object.values(data)[0];
+
+        throw new Error(
+            Array.isArray(firstError)
+                ? firstError[0]
+                : typeof firstError === "string"
+                    ? firstError
+                    : data.detail || "Registration failed. Please try again."
+        );
+    }
+
+    return data;
+}
+
+
 export async function getTrips(accessToken) {
     const response = await fetch(`${API_BASE_URL}/trips/`, {
         headers: {
