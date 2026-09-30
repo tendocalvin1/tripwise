@@ -494,3 +494,22 @@
         font-size: 9px;
     }
 }
+
+
+.login-page {
+    box-sizing: border-box;
+}
+
+
+.login-note a {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.login-success {
+    margin: 0 0 1rem;
+    color: #18794e;
+    font-size: 0.9rem;
+}
