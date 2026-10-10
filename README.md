@@ -280,15 +280,4 @@ For each significant change:
 
 The production MVP is complete according to the last reported smoke test. The next planned implementation task is **Redis caching**, beginning with checking the current repository and branch state before making changes.
 
-Before resuming, inspect the local working tree and recent commits:
-
-```bash
-cd ~/tripwise
-git status
-git branch --show-current
-git log -5 --oneline
-```
-
-Do not reset, overwrite, or switch branches until any local changes have been reviewed.
-
 
