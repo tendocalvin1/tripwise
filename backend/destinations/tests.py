@@ -1,15 +1,19 @@
-from django.test import TestCase
+from django.test import TestCase,override_settings
+import json
+import time
 
 # Create your tests here.
 
-from unittest.mock import patch
+from unittest.mock import patch,MagicMock
+from urllib.error import URLError
 
 from django.urls import reverse
+from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Destination, SavedDestination
-from .weather import WeatherProviderError
+from .models import Destination,SavedDestination
+from .weather import WeatherProviderError,get_destination_weather
 
 
 class DestinationWeatherTests(APITestCase):
@@ -124,8 +128,8 @@ class DestinationWeatherTests(APITestCase):
                 status.HTTP_403_FORBIDDEN,
             ],
         )
-        
-        
+
+
 
 class SavedDestinationAPITests(APITestCase):
     def setUp(self):
@@ -271,3 +275,113 @@ class SavedDestinationAPITests(APITestCase):
                 status.HTTP_403_FORBIDDEN,
             ],
         )
+
+
+
+
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "weather-cache-tests",
+        }
+    }
+)
+class WeatherServiceCacheTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.destination = Destination.objects.create(
+            name="Murchison Falls National Park",
+            country="Uganda",
+            city="Masindi",
+            latitude="2.251900",
+            longitude="31.537000",
+        )
+
+    def mock_weather_response(self):
+        data = {
+            "timezone": "Africa/Kampala",
+            "current": {
+                "temperature_2m": 25.4,
+                "apparent_temperature": 28.8,
+                "weather_code": 2,
+                "wind_speed_10m": 8.4,
+            },
+            "daily": {
+                "time": ["2026-10-10"],
+                "weather_code": [2],
+                "temperature_2m_max": [29.0],
+                "temperature_2m_min": [20.0],
+                "precipitation_probability_max": [30],
+                "precipitation_sum": [2.1],
+            },
+        }
+
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = (
+            json.dumps(data).encode("utf-8")
+        )
+        return response
+
+    @patch("destinations.weather.urlopen")
+    def test_successful_forecast_is_reused_from_cache(self, mock_urlopen):
+        mock_urlopen.return_value = self.mock_weather_response()
+
+        first_result = get_destination_weather(self.destination)
+        second_result = get_destination_weather(self.destination)
+
+        self.assertEqual(first_result, second_result)
+        self.assertEqual(mock_urlopen.call_count, 1)
+
+    @patch("destinations.weather.urlopen")
+    def test_different_coordinates_use_separate_cache_entries(
+        self, mock_urlopen
+    ):
+        mock_urlopen.side_effect = [
+            self.mock_weather_response(),
+            self.mock_weather_response(),
+        ]
+
+        get_destination_weather(self.destination)
+
+        other_destination = Destination.objects.create(
+            name="Another Destination",
+            country="Uganda",
+            city="Other City",
+            latitude="0.347600",
+            longitude="32.582500",
+        )
+        get_destination_weather(other_destination)
+
+        self.assertEqual(mock_urlopen.call_count, 2)
+
+    @patch("destinations.weather.urlopen")
+    def test_provider_failures_are_not_cached(self, mock_urlopen):
+        mock_urlopen.side_effect = URLError("Provider unavailable")
+
+        with self.assertRaises(WeatherProviderError):
+            get_destination_weather(self.destination)
+
+        with self.assertRaises(WeatherProviderError):
+            get_destination_weather(self.destination)
+
+        self.assertEqual(mock_urlopen.call_count, 2)
+
+
+
+
+    @patch("destinations.weather.urlopen")
+    @patch("destinations.weather.WEATHER_CACHE_TTL", 1)
+    def test_forecast_is_fetched_again_after_cache_expires(
+        self, mock_urlopen
+    ):
+        mock_urlopen.side_effect = [
+            self.mock_weather_response(),
+            self.mock_weather_response(),
+        ]
+
+        get_destination_weather(self.destination)
+        time.sleep(1.2)
+        get_destination_weather(self.destination)
+
+        self.assertEqual(mock_urlopen.call_count, 2)
