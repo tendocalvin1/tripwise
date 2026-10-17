@@ -1,6 +1,6 @@
-
 import hashlib
 import json
+import logging
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
@@ -9,6 +9,8 @@ from django.core.cache import cache
 from rest_framework.exceptions import APIException
 
 
+logger = logging.getLogger(__name__)
+
 WEATHER_CACHE_TTL = 600
 
 
@@ -16,6 +18,57 @@ class WeatherProviderError(APIException):
     status_code = 502
     default_detail = "The weather service is temporarily unavailable."
     default_code = "weather_service_error"
+
+
+def _read_weather_cache(cache_key):
+    try:
+        return cache.get(cache_key)
+    except Exception:
+        logger.exception(
+            "Weather cache read failed for key %s; fetching from provider.",
+            cache_key,
+        )
+        return None
+
+
+def _write_weather_cache(cache_key, forecast_data):
+    try:
+        cache.set(
+            cache_key,
+            forecast_data,
+            timeout=WEATHER_CACHE_TTL,
+        )
+    except Exception:
+        logger.exception(
+            "Weather cache write failed for key %s; returning uncached forecast.",
+            cache_key,
+        )
+
+
+def _normalize_provider_payload(data):
+    try:
+        daily = data.get("daily") or {}
+        dates = daily.get("time") or []
+        forecast = []
+        for index, date in enumerate(dates):
+            forecast.append({
+                "date": date,
+                "weather_code": daily["weather_code"][index],
+                "temperature_max": daily["temperature_2m_max"][index],
+                "temperature_min": daily["temperature_2m_min"][index],
+                "precipitation_probability": (
+                    daily["precipitation_probability_max"][index]
+                ),
+                "precipitation_sum": daily["precipitation_sum"][index],
+            })
+    except (KeyError, IndexError, TypeError, AttributeError) as exc:
+        raise WeatherProviderError() from exc
+
+    return {
+        "timezone": data.get("timezone"),
+        "current": data.get("current"),
+        "forecast": forecast,
+    }
 
 
 def get_destination_weather(destination):
@@ -43,7 +96,9 @@ def get_destination_weather(destination):
     cache_hash = hashlib.sha256(cache_input.encode()).hexdigest()
     cache_key = f"weather:v1:{cache_hash}"
 
-    forecast_data = cache.get(cache_key)
+    forecast_data = _read_weather_cache(cache_key)
+    if not isinstance(forecast_data, dict):
+        forecast_data = None
 
     if forecast_data is None:
         url = (
@@ -63,40 +118,10 @@ def get_destination_weather(destination):
         ) as exc:
             raise WeatherProviderError() from exc
 
-        daily = data.get("daily", {})
-        dates = daily.get("time", [])
-
-        forecast = []
-        for index, date in enumerate(dates):
-            forecast.append({
-                "date": date,
-                "weather_code": daily["weather_code"][index],
-                "temperature_max": (
-                    daily["temperature_2m_max"][index]
-                ),
-                "temperature_min": (
-                    daily["temperature_2m_min"][index]
-                ),
-                "precipitation_probability": (
-                    daily["precipitation_probability_max"][index]
-                ),
-                "precipitation_sum": (
-                    daily["precipitation_sum"][index]
-                ),
-            })
-
-        forecast_data = {
-            "timezone": data.get("timezone"),
-            "current": data.get("current"),
-            "forecast": forecast,
-        }
+        forecast_data = _normalize_provider_payload(data)
 
         # Cache only a successfully retrieved and normalized forecast.
-        cache.set(
-            cache_key,
-            forecast_data,
-            timeout=WEATHER_CACHE_TTL,
-        )
+        _write_weather_cache(cache_key, forecast_data)
 
     return {
         "destination": {
