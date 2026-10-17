@@ -130,6 +130,137 @@ class DestinationWeatherTests(APITestCase):
         )
 
 
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "weather-api-cache-tests",
+        }
+    }
+)
+class DestinationWeatherAPIIntegrationTests(APITestCase):
+    def setUp(self):
+        cache.clear()
+        self.destination = Destination.objects.create(
+            name="Murchison Falls National Park",
+            country="Uganda",
+            city="Masindi",
+            latitude="2.251900",
+            longitude="31.537000",
+        )
+        self.url = reverse(
+            "destination-weather",
+            kwargs={"pk": self.destination.id},
+        )
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            email="weather-api-test@example.com",
+            password="test-password-123",
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def mock_weather_response(self):
+        data = {
+            "timezone": "Africa/Kampala",
+            "current": {
+                "temperature_2m": 25.4,
+                "apparent_temperature": 28.8,
+                "weather_code": 2,
+                "wind_speed_10m": 8.4,
+            },
+            "daily": {
+                "time": ["2026-10-10"],
+                "weather_code": [2],
+                "temperature_2m_max": [29.0],
+                "temperature_2m_min": [20.0],
+                "precipitation_probability_max": [30],
+                "precipitation_sum": [2.1],
+            },
+        }
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = (
+            json.dumps(data).encode("utf-8")
+        )
+        return response
+
+    @patch("destinations.weather.urlopen")
+    def test_weather_api_schema_is_unchanged_on_success(self, mock_urlopen):
+        mock_urlopen.return_value = self.mock_weather_response()
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            set(response.data.keys()),
+            {"destination", "timezone", "current", "forecast"},
+        )
+        self.assertEqual(
+            response.data["destination"],
+            {
+                "id": str(self.destination.id),
+                "name": "Murchison Falls National Park",
+                "city": "Masindi",
+                "country": "Uganda",
+            },
+        )
+        self.assertEqual(
+            response.data["forecast"][0]["date"],
+            "2026-10-10",
+        )
+
+    @patch("destinations.weather.urlopen")
+    @patch("destinations.weather.cache.set")
+    def test_weather_api_returns_200_when_cache_set_fails(
+        self, mock_cache_set, mock_urlopen
+    ):
+        mock_cache_set.side_effect = ConnectionError("cache write failed")
+        mock_urlopen.return_value = self.mock_weather_response()
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(mock_urlopen.call_count, 1)
+
+    @patch("destinations.weather.urlopen")
+    @patch("destinations.weather.cache.get")
+    def test_weather_api_returns_200_when_cache_get_fails(
+        self, mock_cache_get, mock_urlopen
+    ):
+        mock_cache_get.side_effect = ConnectionError("cache unavailable")
+        mock_urlopen.return_value = self.mock_weather_response()
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(mock_urlopen.call_count, 1)
+
+    @patch("destinations.weather.urlopen")
+    def test_weather_api_returns_502_for_malformed_provider_payload(
+        self, mock_urlopen
+    ):
+        incomplete_payload = {
+            "timezone": "Africa/Kampala",
+            "daily": {"time": ["2026-10-10"]},
+        }
+        provider_response = MagicMock()
+        provider_response.__enter__.return_value.read.return_value = (
+            json.dumps(incomplete_payload).encode("utf-8")
+        )
+        mock_urlopen.return_value = provider_response
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_502_BAD_GATEWAY,
+        )
+        self.assertEqual(
+            response.data["detail"],
+            "The weather service is temporarily unavailable.",
+        )
+
 
 class SavedDestinationAPITests(APITestCase):
     def setUp(self):
@@ -385,3 +516,99 @@ class WeatherServiceCacheTests(TestCase):
         get_destination_weather(self.destination)
 
         self.assertEqual(mock_urlopen.call_count, 2)
+
+    def expected_weather_payload(self):
+        return {
+            "destination": {
+                "id": str(self.destination.id),
+                "name": "Murchison Falls National Park",
+                "city": "Masindi",
+                "country": "Uganda",
+            },
+            "timezone": "Africa/Kampala",
+            "current": {
+                "temperature_2m": 25.4,
+                "apparent_temperature": 28.8,
+                "weather_code": 2,
+                "wind_speed_10m": 8.4,
+            },
+            "forecast": [
+                {
+                    "date": "2026-10-10",
+                    "weather_code": 2,
+                    "temperature_max": 29.0,
+                    "temperature_min": 20.0,
+                    "precipitation_probability": 30,
+                    "precipitation_sum": 2.1,
+                }
+            ],
+        }
+
+    @patch("destinations.weather.urlopen")
+    def test_cache_miss_fetches_provider_once(self, mock_urlopen):
+        mock_urlopen.return_value = self.mock_weather_response()
+
+        result = get_destination_weather(self.destination)
+
+        self.assertEqual(result, self.expected_weather_payload())
+        self.assertEqual(mock_urlopen.call_count, 1)
+
+    @patch("destinations.weather.urlopen")
+    @patch("destinations.weather.cache.get")
+    def test_cache_get_failure_still_returns_provider_forecast(
+        self, mock_cache_get, mock_urlopen
+    ):
+        mock_cache_get.side_effect = ConnectionError("cache unavailable")
+        mock_urlopen.return_value = self.mock_weather_response()
+
+        result = get_destination_weather(self.destination)
+
+        self.assertEqual(result, self.expected_weather_payload())
+        self.assertEqual(mock_urlopen.call_count, 1)
+
+    @patch("destinations.weather.urlopen")
+    @patch("destinations.weather.cache.set")
+    def test_cache_set_failure_still_returns_provider_forecast(
+        self, mock_cache_set, mock_urlopen
+    ):
+        mock_cache_set.side_effect = ConnectionError("cache write failed")
+        mock_urlopen.return_value = self.mock_weather_response()
+
+        result = get_destination_weather(self.destination)
+
+        self.assertEqual(result, self.expected_weather_payload())
+        mock_cache_set.assert_called_once()
+        self.assertEqual(mock_urlopen.call_count, 1)
+
+    @patch("destinations.weather.urlopen")
+    @patch("destinations.weather.cache.get")
+    def test_cache_get_failure_and_provider_failure_raise_provider_error(
+        self, mock_cache_get, mock_urlopen
+    ):
+        mock_cache_get.side_effect = ConnectionError("cache unavailable")
+        mock_urlopen.side_effect = URLError("Provider unavailable")
+
+        with self.assertRaises(WeatherProviderError):
+            get_destination_weather(self.destination)
+
+        self.assertEqual(mock_urlopen.call_count, 1)
+
+    @patch("destinations.weather.urlopen")
+    def test_malformed_provider_payload_raises_provider_error(
+        self, mock_urlopen
+    ):
+        incomplete_payload = {
+            "timezone": "Africa/Kampala",
+            "current": {"temperature_2m": 25.4},
+            "daily": {
+                "time": ["2026-10-10"],
+            },
+        }
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = (
+            json.dumps(incomplete_payload).encode("utf-8")
+        )
+        mock_urlopen.return_value = response
+
+        with self.assertRaises(WeatherProviderError):
+            get_destination_weather(self.destination)
