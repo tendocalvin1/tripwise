@@ -1,3 +1,6 @@
+
+import logging
+
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -10,6 +13,9 @@ from .serializers import (
     SavedDestinationSerializer,
 )
 from .weather import get_destination_weather
+
+
+logger = logging.getLogger(__name__)
 
 
 class DestinationViewSet(viewsets.ModelViewSet):
@@ -26,8 +32,18 @@ class DestinationViewSet(viewsets.ModelViewSet):
                 "Weather is unavailable because this destination has no coordinates."
             )
 
-        weather_data = get_destination_weather(destination)
-        return Response(weather_data, status=status.HTTP_200_OK)
+        try:
+            weather_data = get_destination_weather(destination)
+            return Response(
+                weather_data,
+                status=status.HTTP_200_OK,
+            )
+        except Exception:
+            logger.exception(
+                "Unexpected weather endpoint failure for destination %s",
+                destination.pk,
+            )
+            raise
 
 
 class SavedDestinationViewSet(viewsets.ModelViewSet):
