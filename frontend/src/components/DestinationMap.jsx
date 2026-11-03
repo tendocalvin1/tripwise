@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
     MapContainer,
     Marker,
@@ -36,28 +36,24 @@ function isValidCoordinate(value, min, max) {
     return Number.isFinite(number) && number >= min && number <= max;
 }
 
-function MapViewport({ destinations }) {
+function MapViewport({ points, coordinateSignature }) {
     const map = useMap();
 
     useEffect(() => {
-        if (destinations.length === 0) {
+        if (points.length === 0) {
             return;
         }
 
-        const points = destinations.map((destination) => [
-            Number(destination.latitude),
-            Number(destination.longitude),
-        ]);
-
         if (points.length === 1) {
             map.setView(points[0], 10);
-        } else {
-            map.fitBounds(points, {
-                padding: [35, 35],
-                maxZoom: 10,
-            });
+            return;
         }
-    }, [destinations, map]);
+
+        map.fitBounds(points, {
+            padding: [35, 35],
+            maxZoom: 10,
+        });
+    }, [coordinateSignature, map, points]);
 
     return null;
 }
@@ -66,10 +62,28 @@ function DestinationMap({
     destinations = [],
     onPlanDestination,
 }) {
-    const mappedDestinations = destinations.filter(
-        (destination) =>
-            isValidCoordinate(destination.latitude, -90, 90) &&
-            isValidCoordinate(destination.longitude, -180, 180)
+    const mappedDestinations = useMemo(
+        () =>
+            destinations.filter(
+                (destination) =>
+                    isValidCoordinate(destination.latitude, -90, 90) &&
+                    isValidCoordinate(destination.longitude, -180, 180)
+            ),
+        [destinations]
+    );
+
+    const points = useMemo(
+        () =>
+            mappedDestinations.map((destination) => [
+                Number(destination.latitude),
+                Number(destination.longitude),
+            ]),
+        [mappedDestinations]
+    );
+
+    const coordinateSignature = useMemo(
+        () => points.map(([lat, lng]) => `${lat},${lng}`).join("|"),
+        [points]
     );
 
     if (mappedDestinations.length === 0) {
@@ -89,9 +103,7 @@ function DestinationMap({
             <div className="destination-map-heading">
                 <div>
                     <h2>Explore the map</h2>
-                    <p>
-                        Select a marker to discover a destination.
-                    </p>
+                    <p>Select a marker to discover a destination.</p>
                 </div>
 
                 <span className="destination-map-count">
@@ -113,7 +125,10 @@ function DestinationMap({
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                <MapViewport destinations={mappedDestinations} />
+                <MapViewport
+                    points={points}
+                    coordinateSignature={coordinateSignature}
+                />
 
                 {mappedDestinations.map((destination) => (
                     <Marker
