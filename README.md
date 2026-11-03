@@ -1,115 +1,284 @@
-# Tripwise — Project Status (Temporary README)
+# Tripwise — Full-Stack Travel Planning Application
 
-> **Current milestone:** Production MVP deployed and smoke-tested  
-> **Next milestone:** Resume development with Redis caching  
-> **Status:** Active project
+Tripwise is a full-stack travel-planning application designed to help travellers discover destinations, organize trips, manage itineraries and budgets, and access destination-specific weather information.
 
-Tripwise is a full-stack travel-planning application for discovering destinations, creating trips, managing itineraries and budgets, saving destinations, and accessing destination weather information.
+The platform provides an integrated travel-planning experience, allowing users to explore available destinations, save places they are interested in, create trips, organize activities, and keep track of travel expenses from one application.
 
-This document is a temporary record of the work completed so far and the planned next steps. Update it as the project evolves.
+Built with **React, Django REST Framework, and PostgreSQL**, Tripwise focuses on practical full-stack engineering principles, including secure authentication, user-scoped data access, API design, data validation, caching, automated testing, and production deployment.
 
-## 1. Current Production Architecture
+The application is deployed with a separately hosted frontend and backend, demonstrating a decoupled client-server architecture.
 
-```text
-Traveler
-   |
-   v
-React + Vite frontend
-Hosted on Vercel
-   |
-   | HTTPS / REST API
-   v
-Django + Django REST Framework
-Served by Gunicorn on Render
-   |
-   +--------------------+
-   |                    |
-   v                    v
-PostgreSQL          External weather API
-Hosted on Render
+---
+
+## 🌟 Key Features
+
+### 1. Authentication and Authorization
+
+- **User Registration:** Allows users to create accounts.
+- **Secure Authentication:** Implements JWT-based authentication with access and refresh tokens.
+- **Protected Endpoints:** Restricts access to authenticated users.
+- **User-Scoped Resources:** Ensures users can only access and manage their own trips and related records.
+- **Resource Ownership Enforcement:** Implements authorization checks at the backend level rather than relying exclusively on frontend restrictions.
+
+### 2. Trip Management
+
+- **Trip Creation:** Create trips associated with selected destinations.
+- **Trip Dashboard:** Retrieve and view personal trips.
+- **Trip Details:** Access individual trip information.
+- **Trip Updates:** Modify existing trip information.
+- **Trip Deletion:** Remove trips.
+- **Date Validation:** Validate trip dates to prevent invalid date ranges.
+- **Ownership Enforcement:** Restrict trip operations to their respective owners.
+
+### 3. Itinerary Management
+
+- Create itinerary items associated with individual trips.
+- Retrieve itinerary details.
+- Update existing activities.
+- Delete itinerary items.
+- Organize activities as part of a trip.
+- Validate itinerary data and enforce resource ownership.
+
+### 4. Budget Management
+
+- Create budget items for individual trips.
+- Retrieve trip-related expenses.
+- Update budget records.
+- Delete budget items.
+- Validate budget information.
+- Enforce ownership and database constraints on related resources.
+
+### 5. Destination Discovery
+
+- Browse available travel destinations.
+- Search destinations.
+- Filter destinations by type.
+- View destination information.
+- Save destinations for future reference.
+- Remove previously saved destinations.
+- Display destination locations using geographic coordinates.
+
+### 6. Interactive Destination Map
+
+- Interactive map powered by Leaflet and React Leaflet.
+- Displays destinations using geographic markers.
+- Provides destination details through marker popups.
+- Automatically adjusts the map viewport to accommodate displayed destinations.
+- Updates displayed markers according to the destinations returned by the search and filtering functionality.
+- Handles destinations with missing or invalid coordinates without attempting to render invalid markers.
+- Uses OpenStreetMap tiles for map visualization.
+
+### 7. Weather Integration
+
+- Retrieves destination weather information through the Open-Meteo API.
+- Uses destination latitude and longitude for location-specific weather requests.
+- Displays current weather conditions.
+- Provides a seven-day weather forecast.
+- Integrates external weather information into the destination discovery experience.
+
+---
+
+## 🏗️ Architecture Overview
+
+Tripwise follows a decoupled client-server architecture. The React frontend communicates with a Django REST Framework backend through HTTP REST APIs.
+
+The backend handles authentication, business logic, data validation, resource ownership, database operations, and external weather API integration.
+
+PostgreSQL provides persistent storage, while Redis is used for caching selected responses.
+
+### System Architecture
+
+```mermaid
+flowchart TD
+    U[Traveler]
+
+    subgraph Frontend["Frontend Layer"]
+        A[React + Vite Application]
+        B[React Router]
+        C[Destination Map - React Leaflet]
+    end
+
+    subgraph Backend["Backend Layer"]
+        D[Django Application]
+        E[Django REST Framework]
+        F[JWT Authentication]
+        G[Business Logic and Validation]
+        H[Redis Cache]
+    end
+
+    subgraph Data["Data Layer"]
+        I[(PostgreSQL Database)]
+    end
+
+    subgraph External["External Services"]
+        J[Open-Meteo Weather API]
+        K[OpenStreetMap Tile Service]
+    end
+
+    U --> A
+    A --> B
+    A --> C
+    A <-->|HTTPS / REST API| E
+
+    E --> D
+    D --> F
+    D --> G
+    G --> I
+    G <--> H
+    G --> J
+
+    C --> K
 ```
 
-### Technologies
+### Architecture Responsibilities
 
-- **Frontend:** React, Vite, React Router, JavaScript
-- **Backend:** Python, Django, Django REST Framework
-- **Authentication:** JWT access and refresh tokens
-- **Database:** PostgreSQL
-- **Production server:** Gunicorn
-- **Frontend hosting:** Vercel
-- **Backend and database hosting:** Render
-- **Quality checks:** Django tests, frontend lint/build, GitHub Actions CI
-- **Version control:** Git and GitHub
+| Component | Responsibility |
+|---|---|
+| React + Vite | User interface and frontend application |
+| React Router | Client-side navigation |
+| Django | Backend application and business logic |
+| Django REST Framework | REST API development |
+| JWT | Authentication and protected API access |
+| PostgreSQL | Persistent application data |
+| Redis | Response caching |
+| Open-Meteo | External weather information |
+| React Leaflet | Interactive destination map |
+| OpenStreetMap | Map tile data |
 
-## 2. Features Implemented
+---
 
-### Authentication and authorization
+## 🛠️ Technology Stack
 
-- User registration and login
-- JWT access and refresh token flow
-- Protected API endpoints
-- User-scoped data access
-- Backend enforcement of resource ownership
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React, JavaScript, Vite |
+| **Frontend Routing** | React Router |
+| **Maps** | Leaflet, React Leaflet, OpenStreetMap |
+| **Backend** | Python, Django, Django REST Framework |
+| **Authentication** | JWT access and refresh tokens |
+| **Database** | PostgreSQL |
+| **Caching** | Redis |
+| **External API Integration** | Open-Meteo Weather API |
+| **Production Application Server** | Gunicorn |
+| **Frontend Hosting** | Vercel |
+| **Backend Hosting** | Render |
+| **Database Hosting** | Render PostgreSQL |
+| **Testing** | Django automated tests, ESLint, Vite production build |
+| **CI/CD** | GitHub Actions |
+| **Version Control** | Git and GitHub |
 
-### Trips
+---
 
-- Create and retrieve trips
-- View individual trip details
-- Update and delete trips
-- Associate trips with destinations
-- Validate trip dates
-- Restrict trip access to the owning user
+## 🧠 Engineering Decisions and Implementation
 
-### Itineraries and budgets
+One of the main objectives of Tripwise was to build a functional application while making deliberate engineering decisions around architecture, data management, security, and deployment.
 
-- Create, retrieve, update, and delete itinerary items
-- Create, retrieve, update, and delete budget items
-- Associate itinerary and budget records with trips
-- Validate budget data and enforce database constraints
-- Apply ownership checks to related resources
+### 1. Choosing React and Vite for the Frontend
 
-### Destinations and weather
+The frontend was built using React and Vite.
 
-- Destination discovery
-- Saved destinations and removal of saved destinations
-- Destination weather integration
-- Destination coordinates used for weather requests
-- Initial destination data stored in PostgreSQL
+React provides a component-based approach to building the user interface, while Vite provides the development server and production build tooling.
 
-### Frontend
+React Router handles client-side navigation.
 
-- React application built with Vite
-- React Router navigation
-- Login and registration flows
-- Dashboard and trip details
-- Destination selection when creating a trip
-- Integration with the Django REST API
-- API base URL configurable through `VITE_API_BASE_URL`
+**Why this approach?**
 
-## 3. Testing and Production Work Completed
+The application primarily requires an interactive user interface that communicates with a separate backend API. A React frontend provides a straightforward way to build and maintain that experience without coupling frontend rendering to the Django application.
 
-- Backend automated test suite passed: **32 tests**
-- Frontend linting passed
-- Frontend production build passed
-- GitHub Actions CI configured for backend and frontend checks
-- Backend deployed to Render
-- Frontend deployed to Vercel
-- Production PostgreSQL database configured
-- Environment-based settings configured for production
-- Gunicorn configured as the production application server
-- Database migrations applied during deployment
-- CORS and CSRF configuration corrected for the deployed frontend
-- Production registration and login verified
-- Protected trips endpoint verified using a fresh access token
-- Production smoke test completed across the major workflows
+### 2. Choosing Django REST Framework for the Backend
 
-### Production issue resolved: empty destination list
+Django REST Framework was selected for backend development.
 
-The newly provisioned production database did not contain destination records. As a result, users could not select a destination when creating a trip.
+It provides the foundation for implementing REST APIs, serializers, request validation, authentication, permissions, and database-backed application functionality.
 
-**Resolution:** Added a Django data migration at `backend/destinations/migrations/0003_seed_destinations.py` to seed ten destinations in Uganda. The migration was applied successfully in the local environment and deployed to production.
+**Why this approach?**
 
-The ten seeded destinations are:
+Django provides a mature backend framework with an integrated ORM, authentication capabilities, database migrations, and a structured application architecture.
+
+Using Django REST Framework also creates a clear separation between frontend presentation and backend business logic.
+
+### 3. PostgreSQL for Persistent Data Storage
+
+PostgreSQL was selected as the primary relational database.
+
+It stores application data, including:
+
+- User-related information.
+- Destinations.
+- Trips.
+- Itinerary items.
+- Budget items.
+- Saved destinations.
+
+**Why this approach?**
+
+Tripwise has several related data entities. A relational database provides structured relationships, constraints, and transactional data management.
+
+Django's ORM was used to interact with the database, while migrations provide a reproducible way to manage database schema changes and initial destination data.
+
+### 4. JWT Authentication and Resource Ownership
+
+JWT access and refresh tokens were implemented for authentication.
+
+Protected API endpoints enforce authentication and ownership restrictions.
+
+**Why this approach?**
+
+Authentication alone is not sufficient for applications containing user-specific resources.
+
+A user should not be able to access another user's trips simply because they know a resource identifier.
+
+For this reason, ownership checks are enforced by the backend when retrieving and modifying protected resources.
+
+### 5. Redis Caching with the Cache-Aside Pattern
+
+Redis was introduced to cache selected application responses.
+
+The implementation uses a cache-aside approach:
+
+1. The application checks Redis for an existing cached response.
+2. If the response exists, it is returned from the cache.
+3. If the response is missing, the application retrieves the data from its underlying source.
+4. The result is stored in Redis for subsequent requests.
+5. Cached entries expire according to their configured time-to-live.
+
+The implementation uses SHA-256-based cache keys and a 600-second TTL.
+
+Cache reads and writes are handled on a best-effort basis so that Redis availability does not unnecessarily prevent the application from serving requests.
+
+**Why this approach?**
+
+Repeatedly retrieving the same data from an external source or performing the same expensive operation can introduce unnecessary latency.
+
+Caching helps reduce repeated work and provides an opportunity to improve response times.
+
+The cache-aside pattern also keeps the underlying data source independent of Redis.
+
+### 6. External Weather API Integration
+
+Open-Meteo was integrated to provide destination weather information.
+
+The application uses geographic coordinates associated with destinations to request weather data.
+
+**Why this approach?**
+
+Weather is an important part of travel planning. Rather than maintaining a separate weather database, Tripwise retrieves weather information from an external service when required.
+
+This also demonstrates how a backend application can integrate third-party APIs and expose their functionality through its own application interface.
+
+### 7. Reproducible Destination Data Through Django Migrations
+
+During production deployment, the application initially had an empty destination table.
+
+This meant users could not select destinations when creating trips.
+
+Instead of manually inserting records into the production database, a Django data migration was implemented to seed ten Ugandan destinations.
+
+The migration is located at:
+
+`backend/destinations/migrations/0003_seed_destinations.py`
+
+The seeded destinations include:
 
 1. Kampala
 2. Entebbe
@@ -122,42 +291,214 @@ The ten seeded destinations are:
 9. Fort Portal
 10. Kasese
 
-This made destination setup reproducible through migrations rather than relying on manual database changes.
+The destination records include geographic coordinates used by the weather integration and interactive map.
 
-## 4. Production Smoke Test
+**Why this approach?**
 
-The following workflows were manually tested in the live application and reported as working:
+Database migrations make initial data setup reproducible across environments and reduce reliance on manual production database changes.
 
-- Authentication
-- Dashboard
-- Trip creation
-- Viewing, editing, and deleting trips
-- Itinerary management
-- Budget management
-- Destination discovery
-- Weather
-- Saving and removing destinations
-- Protected access and authentication behavior
-- Refresh and navigation
-- Browser console/network checks
+### 8. Separate Frontend and Backend Deployment
 
-This reflects the last reported smoke-test result. Recheck production after significant future changes.
+The frontend and backend are deployed independently.
 
-## 5. Deployment and Configuration
+- Frontend: Vercel.
+- Backend: Render.
+- Database: Render PostgreSQL.
 
-The frontend and backend are deployed separately:
+The frontend communicates with the backend using a configurable API base URL.
 
-- **Frontend:** Vercel
-- **Backend:** Render
-- **Database:** Render PostgreSQL
+**Why this approach?**
 
-The frontend API URL is configured with:
+Separating deployment responsibilities allows the frontend and backend to be developed, configured, and deployed independently.
+
+It also provides a practical foundation for maintaining a decoupled application architecture.
+
+---
+
+## 🚀 Live Application
+
+| Component | Deployment |
+|---|---|
+| **Frontend** | [Tripwise Web Application](https://tripwise-tendo-calvin-s-projects.vercel.app/) |
+| **Backend** | [Django Backend](https://tripwise-django-web-app.onrender.com/) |
+| **Source Code** | [GitHub Repository](https://github.com/tendocalvin1/tripwise) |
+
+---
+
+## 🧪 Testing and Quality Assurance
+
+Testing and quality checks were incorporated throughout development to verify application functionality and reduce regressions.
+
+### Backend Testing
+
+The Django backend includes automated tests covering application functionality.
+
+The last reported backend test run passed **45 tests**.
+
+Run the backend test suite using:
+
+```bash
+cd backend
+python manage.py test
+```
+
+### Frontend Quality Checks
+
+ESLint is used to identify frontend code-quality issues.
+
+```bash
+cd frontend
+npm run lint
+```
+
+The Vite production build is also used to verify that the frontend can be compiled for deployment.
+
+```bash
+npm run build
+```
+
+### Continuous Integration
+
+GitHub Actions is configured to run backend and frontend quality checks.
+
+This provides automated verification of application changes through the project's CI workflow.
+
+### Production Verification
+
+The application was deployed and smoke-tested against its production environment.
+
+The reported verification covered:
+
+- Registration and login.
+- Authentication and protected access.
+- Dashboard navigation.
+- Trip creation, retrieval, updating, and deletion.
+- Itinerary management.
+- Budget management.
+- Destination discovery.
+- Weather information.
+- Saving and removing destinations.
+- Refresh and navigation behaviour.
+- Browser console and network checks.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Ensure you have the following installed:
+
+- Python 3.12 or a compatible project-supported Python version.
+- Node.js and npm.
+- PostgreSQL.
+- Redis, for running the caching functionality locally.
+- Git.
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/tendocalvin1/tripwise.git
+
+cd tripwise
+```
+
+### 2. Backend Setup
+
+Navigate to the backend directory:
+
+```bash
+cd backend
+```
+
+Create and activate a virtual environment:
+
+```bash
+python -m venv venv
+```
+
+On Ubuntu/Linux:
+
+```bash
+source venv/bin/activate
+```
+
+On Windows PowerShell:
+
+```powershell
+venv\Scripts\Activate.ps1
+```
+
+Install the Python dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Configure the backend environment variables and PostgreSQL database using the project's existing settings.
+
+Apply database migrations:
+
+```bash
+python manage.py migrate
+```
+
+Run Django's system checks:
+
+```bash
+python manage.py check
+```
+
+Start the backend development server:
+
+```bash
+python manage.py runserver
+```
+
+### 3. Frontend Setup
+
+Open another terminal and navigate to the frontend directory:
+
+```bash
+cd frontend
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Configure the frontend API base URL using:
 
 ```text
 VITE_API_BASE_URL
 ```
 
-The backend uses environment variables for settings such as:
+Run the frontend quality checks:
+
+```bash
+npm run lint
+npm run build
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+The frontend will display the local development URL provided by Vite.
+
+### 4. Environment Configuration
+
+The frontend uses:
+
+```text
+VITE_API_BASE_URL
+```
+
+The backend uses environment-based configuration, including:
 
 ```text
 SECRET_KEY
@@ -172,112 +513,82 @@ POSTGRES_HOST
 POSTGRES_PORT
 ```
 
-Use local environment files for development and configure production variables through the hosting provider. **Never commit real secrets, passwords, access tokens, or populated `.env` files.**
+Redis connection settings must also be configured according to the project's existing cache configuration.
 
-## 6. Local Development
+Use local environment variables for development and configure production variables through the hosting provider.
 
-Repository:
+**Never commit actual credentials, passwords, access tokens, or populated `.env` files to version control.**
 
-```text
-https://github.com/tendocalvin1/tripwise
-```
+---
 
-Expected project structure:
+## 📁 Project Structure
 
 ```text
 tripwise/
+│
 ├── backend/
 │   ├── destinations/
+│   │   ├── migrations/
+│   │   │   └── 0003_seed_destinations.py
+│   │   └── ...
+│   │
 │   ├── trips/
 │   ├── users/
 │   ├── tripwise/
 │   └── manage.py
+│
 ├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── DestinationMap.jsx
+│   │   │
+│   │   ├── pages/
+│   │   │   └── Destinations.jsx
+│   │   │
+│   │   └── services/
+│   │
+│   ├── package.json
+│   └── ...
+│
 ├── .github/
+│   └── workflows/
+│
 └── README.md
 ```
 
-### Backend commands
+---
 
-Run from the repository root:
+## 🔒 Security and Configuration Practices
 
-```bash
-cd backend
-python manage.py check
-python manage.py test
-python manage.py migrate
-python manage.py runserver
-```
+The application incorporates several security-related practices:
 
-### Frontend commands
+- JWT authentication for protected API access.
+- Backend permission and resource ownership checks.
+- Environment-based configuration for sensitive settings.
+- CORS and CSRF configuration for the deployed frontend and backend.
+- Database constraints and application-level data validation.
+- Separation of frontend and backend responsibilities.
 
-In another terminal:
+These practices help ensure that application security and data integrity are enforced beyond the user interface.
 
-```bash
-cd frontend
-npm install
-npm run lint
-npm run build
-npm run dev
-```
+---
 
-Use the project's existing environment configuration and local database setup. Do not copy production secrets into the repository or share them in logs or chat.
+## 📄 Project Scope
 
-## 7. Next Engineering Milestones
+Tripwise was developed as a functional full-stack travel-planning MVP.
 
-These are planned, not yet confirmed as implemented.
+The implemented scope focuses on destination discovery, trip management, itinerary organization, budget tracking, weather integration, interactive mapping, authentication, and production deployment.
 
-### Phase 1 — Redis caching
+The project demonstrates practical application of backend development, frontend engineering, database design, external API integration, caching, testing, and deployment.
 
-- Introduce Redis in the local development environment
-- Identify appropriate data to cache
-- Implement the cache-aside pattern
-- Configure cache keys and time-to-live (TTL)
-- Handle cache invalidation when data changes
-- Test cache hits, misses, expiry, and stale-data behavior
-- Measure whether caching improves response time
-- Plan and deploy Redis in production
+---
 
-### Phase 2 — Background processing
+## 👤 Author
 
-- Introduce Celery workers
-- Use Redis as a broker where appropriate
-- Move suitable slow or scheduled tasks into background jobs
-- Add retry behavior and failure handling
-- Test asynchronous task execution
+**Tendo Calvin**
 
-### Phase 3 — AI capabilities
+Software Engineer | Full-Stack Developer | GenAI Engineer
 
-- Personalized traveller recommendations
-- AI-assisted itinerary generation
-- Input validation and structured output handling
-- Evaluation of recommendation quality and reliability
-
-### Phase 4 — Production engineering
-
-- Query optimization and database indexes
-- Structured logging, monitoring, and error tracking
-- Health checks
-- API rate limiting and additional security hardening
-- Performance and reliability testing
-- Real-time collaboration and geospatial features, where appropriate
-
-## 8. Working Principles
-
-For each significant change:
-
-1. Understand the problem and design the solution.
-2. Implement the smallest useful change.
-3. Run automated tests and quality checks locally.
-4. Review the diff and commit to the working branch.
-5. Run CI and merge through the established workflow.
-6. Deploy and smoke-test production.
-7. Update this document to reflect what is actually implemented.
-
-**Engineering principle:** Never sacrifice understanding for the appearance of productivity.
-
-## 9. Current Resume Point
-
-The production MVP is complete according to the last reported smoke test. The next planned implementation task is **Redis caching**, beginning with checking the current repository and branch state before making changes.
-
+- GitHub: [@tendocalvin1](https://github.com/tendocalvin1)
+- Project: [Tripwise](https://github.com/tendocalvin1/tripwise)
 
